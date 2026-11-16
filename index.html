@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>blckdvc — small native tools for the Mac</title>
+<meta name="description" content="Six free, open-source tools by blckdvc: a batch installer, an instant file finder, a startup items inspector, an audio loop player, a download manager and a report generator.">
+<meta property="og:title" content="blckdvc — small native tools for the Mac">
+<meta property="og:description" content="Free, open-source, and built to do one thing well.">
+<meta property="og:image" content="https://blckdvc.github.io/assets/fouine.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c0d11'/%3E%3Ctext x='32' y='45' font-family='Georgia,serif' font-style='italic' font-size='40' text-anchor='middle' fill='%23ff7a45'%3Eb%3C/text%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f6f5f1; --bg-2: #eceae4; --ink: #15161a; --ink-2: #55575f; --ink-3: #8b8d95;
+    --line: rgba(20, 22, 30, .12); --card: #ffffff; --shadow: rgba(20, 22, 40, .18);
+    --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --serif: ui-serif, "New York", "Iowan Old Style", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c0d11; --bg-2: #13151b; --ink: #ecebe6; --ink-2: #a9abb3; --ink-3: #70727b;
+      --line: rgba(255, 255, 255, .11); --card: #16181f; --shadow: rgba(0, 0, 0, .55);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.55 var(--sans); -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+  }
+  a { color: inherit; }
+  img { max-width: 100%; height: auto; display: block; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px; }
+
+  /* Barre du haut */
+  header.bar {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: saturate(160%) blur(14px); -webkit-backdrop-filter: saturate(160%) blur(14px);
+    border-bottom: 1px solid var(--line);
+  }
+  .bar .wrap { display: flex; align-items: center; gap: 22px; height: 58px; }
+  .mark { font: italic 600 22px/1 var(--serif); text-decoration: none; letter-spacing: -.01em; }
+  .bar nav { display: flex; gap: 4px; margin-left: auto; overflow-x: auto; scrollbar-width: none; }
+  .bar nav::-webkit-scrollbar { display: none; }
+  .bar nav a {
+    font-size: 14px; color: var(--ink-2); text-decoration: none; white-space: nowrap;
+    padding: 6px 11px; border-radius: 999px; transition: background .15s, color .15s;
+  }
+  .bar nav a:hover { color: var(--ink); background: var(--bg-2); }
+
+  /* Ouverture */
+  .hero { padding: 104px 0 44px; }
+  .hero h1 {
+    font: 600 clamp(44px, 8.2vw, 104px)/.96 var(--sans); letter-spacing: -.045em; margin: 0; max-width: 12ch;
+  }
+  .hero h1 em { font: italic 500 1.04em/1 var(--serif); letter-spacing: -.03em; color: #ff7a45; }
+  .hero p { font-size: clamp(18px, 2.1vw, 22px); color: var(--ink-2); max-width: 54ch; margin: 30px 0 0; }
+  .facts { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 34px; padding: 0; list-style: none; }
+  .facts li { font-size: 14px; color: var(--ink-2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+
+  /* Index des outils */
+  .index { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 26px 0 0; }
+  .index a {
+    display: flex; flex-direction: column; align-items: center; gap: 10px; text-decoration: none;
+    padding: 20px 8px 16px; border-radius: 20px; border: 1px solid var(--line); background: var(--card);
+    transition: transform .2s ease, box-shadow .2s ease, border-color .2s;
+  }
+  .index a:hover { transform: translateY(-4px); box-shadow: 0 18px 40px -22px var(--shadow); border-color: var(--a); }
+  .index img, .index .glyph { width: 62px; height: 62px; }
+  .index span { font-size: 14px; font-weight: 600; }
+  .index small { font-size: 12.5px; color: var(--ink-3); margin-top: -6px; text-align: center; }
+  .glyph {
+    display: grid; place-items: center; border-radius: 15px; color: #fff;
+    background: linear-gradient(145deg, #2c4a7c, #16233d); font: italic 600 28px/1 var(--serif);
+  }
+
+  /* Un outil */
+  .tool { padding: 96px 0; border-top: 1px solid var(--line); }
+  .tool .wrap { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 60px; align-items: center; }
+  .tool.flip .wrap { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+  .tool.flip .text { order: 2; }
+  .tool.flip .shot { order: 1; }
+  .title { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
+  .title img, .title .glyph { width: 60px; height: 60px; flex: none; }
+  .title h2 { font: 650 30px/1.05 var(--sans); letter-spacing: -.025em; margin: 0; }
+  .title .kind { display: block; font: 500 14px/1.3 var(--sans); letter-spacing: 0; color: var(--ink-3); margin-top: 6px; }
+  .hook { font: italic 500 clamp(26px, 3vw, 38px)/1.14 var(--serif); letter-spacing: -.015em; margin: 0 0 18px; text-wrap: balance; }
+  .tool p.lead { color: var(--ink-2); margin: 0 0 22px; }
+  .tool ul { list-style: none; padding: 0; margin: 0 0 28px; }
+  .tool li { position: relative; padding: 9px 0 9px 22px; border-top: 1px solid var(--line); font-size: 15.5px; color: var(--ink-2); }
+  .tool li::before { content: ""; position: absolute; left: 2px; top: 19px; width: 7px; height: 7px; border-radius: 50%; background: var(--a); }
+  .tool li b { color: var(--ink); font-weight: 600; }
+  .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 600; font-size: 15px;
+    padding: 11px 18px; border-radius: 12px; border: 1px solid var(--line); transition: transform .15s, background .15s, border-color .15s;
+  }
+  .btn:hover { transform: translateY(-1px); border-color: var(--ink-3); }
+  .btn.primary { background: var(--a); border-color: transparent; color: #0c0d11; }
+  .btn.primary:hover { filter: brightness(1.08); }
+  .meta { font: 13px/1.4 var(--mono); color: var(--ink-3); margin-left: 4px; }
+
+  .shot { position: relative; }
+  .shot::before {
+    content: ""; position: absolute; inset: 8% 4% 2%; z-index: 0; border-radius: 50%;
+    background: radial-gradient(closest-side, var(--a), transparent); opacity: .42; filter: blur(46px);
+  }
+  .shot a { position: relative; z-index: 1; display: block; }
+  .shot img { filter: drop-shadow(0 26px 44px var(--shadow)); transition: transform .35s cubic-bezier(.2, .7, .2, 1); }
+  .shot a:hover img { transform: translateY(-6px) scale(1.012); }
+  .shot img.flat { border-radius: 12px; border: 1px solid var(--line); }
+
+  /* Pied */
+  footer { border-top: 1px solid var(--line); padding: 72px 0 84px; }
+  footer .wrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 56px; }
+  footer h3 { font: italic 500 28px/1.15 var(--serif); margin: 0 0 12px; }
+  footer p { color: var(--ink-2); font-size: 15.5px; margin: 0 0 16px; max-width: 52ch; }
+  footer .tokens img { width: 179px; height: 40px; }
+  footer .small { font-size: 13.5px; color: var(--ink-3); }
+
+  @media (max-width: 940px) {
+    .index { grid-template-columns: repeat(3, 1fr); }
+    .tool { padding: 68px 0; }
+    .tool .wrap, .tool.flip .wrap { grid-template-columns: 1fr; gap: 40px; }
+    .tool.flip .text { order: 1; }
+    .tool.flip .shot { order: 2; }
+    footer .wrap { grid-template-columns: 1fr; gap: 40px; }
+    .hero { padding-top: 68px; }
+  }
+  @media (max-width: 520px) {
+    body { font-size: 16px; }
+    .wrap { padding: 0 20px; }
+    .index { grid-template-columns: repeat(2, 1fr); }
+    .bar nav { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="mark" href="#top">blckdvc</a>
+    <nav>
+      <a href="#rafale">Rafale</a>
+      <a href="#fouine">Fouine</a>
+      <a href="#launchwarden">LaunchWarden</a>
+      <a href="#audiolook">AudioLook</a>
+      <a href="#kdownloader">KDownloader</a>
+      <a href="#report-workshop">Report Workshop</a>
+      <a href="https://github.com/blckdvc">GitHub ↗</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <h1>Small tools, <em>built to do one thing well.</em></h1>
+      <p>Six utilities I wrote because the one I wanted didn't exist. Each one is free, open-source, and small enough to read in an evening.</p>
+      <ul class="facts">
+        <li>Free and open-source</li>
+        <li>Native, no Electron</li>
+        <li>English and French</li>
+        <li>They update themselves</li>
+      </ul>
+
+      <div class="index">
+        <a href="#rafale" style="--a:#ff7a45"><img src="assets/rafale-icon.png" alt="" width="62" height="62"><span>Rafale</span><small>Batch installer</small></a>
+        <a href="#fouine" style="--a:#6f8cf2"><img src="assets/fouine-icon.png" alt="" width="62" height="62"><span>Fouine</span><small>File finder</small></a>
+        <a href="#launchwarden" style="--a:#3ecf6e"><img src="assets/launchwarden-icon.png" alt="" width="62" height="62"><span>LaunchWarden</span><small>Startup items</small></a>
+        <a href="#audiolook" style="--a:#2b95ff"><img src="assets/audiolook-icon.png" alt="" width="62" height="62"><span>AudioLook</span><small>Loop player</small></a>
+        <a href="#kdownloader" style="--a:#39c5d8"><img src="assets/kdownloader-icon.png" alt="" width="62" height="62"><span>KDownloader</span><small>Downloads</small></a>
+        <a href="#report-workshop" style="--a:#e0a534"><div class="glyph">R</div><span>Report Workshop</span><small>Reports</small></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool" id="rafale" style="--a:#ff7a45">
+    <div class="wrap">
+      <div class="text">
+        <div class="title">
+          <img src="assets/rafale-icon.png" alt="" width="60" height="60">
+          <h2>Rafale<span class="kind">Batch installer for macOS</span></h2>
+        </div>
+        <p class="hook">Drop a folder of installers, type your password once, walk away.</p>
+        <p class="lead">Rafale reads every .dmg, .pkg and .zip you give it, tells you what each one would do to your Mac, then installs the whole batch in a row.</p>
+        <ul>
+          <li><b>One password</b> for the whole batch, however many packages are queued</li>
+          <li><b>You see before you install</b>: version, signature, notarization, what is already there</li>
+          <li><b>Unsigned software is never installed silently</b></li>
+          <li><b>Read the scripts</b> a package would run as root</li>
+        </ul>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/blckdvc/Rafale/releases/latest">Download</a>
+          <a class="btn" href="https://github.com/blckdvc/Rafale">Source</a>
+          <span class="meta" data-repo="Rafale">v0.1.0 · Swift</span>
+        </div>
+      </div>
+      <div class="shot">
+        <a href="assets/rafale.png"><img src="assets/rafale.png" width="1600" height="868" loading="lazy" alt="Rafale installing a batch: one item installed, one being written, the others waiting"></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool flip" id="fouine" style="--a:#6f8cf2">
+    <div class="wrap">
+      <div class="text">
+        <div class="title">
+          <img src="assets/fouine-icon.png" alt="" width="60" height="60">
+          <h2>Fouine<span class="kind">Instant file search for macOS</span></h2>
+        </div>
+        <p class="hook">Three letters in, every match on every disk.</p>
+        <p class="lead">Fouine keeps an index of all your volumes, so a file name search answers while you are still typing: about 96,000 matches out of 6.3 million items in a fifth of a second.</p>
+        <ul>
+          <li><b>Always current</b>: the index follows every change live, and catches up after a relaunch</li>
+          <li><b>Hidden files, system folders and external drives</b> included</li>
+          <li><b>Wildcards and regular expressions</b>, plus filters by kind, date and size</li>
+          <li><b>Every result</b>, not the first few thousand</li>
+        </ul>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/blckdvc/Fouine/releases/latest">Download</a>
+          <a class="btn" href="https://github.com/blckdvc/Fouine">Source</a>
+          <span class="meta" data-repo="Fouine">v0.1.9 · Swift</span>
+        </div>
+      </div>
+      <div class="shot">
+        <a href="assets/fouine.png"><img src="assets/fouine.png" width="1600" height="1220" loading="lazy" alt="Fouine listing every file and folder matching a name, across all volumes"></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool" id="launchwarden" style="--a:#3ecf6e">
+    <div class="wrap">
+      <div class="text">
+        <div class="title">
+          <img src="assets/launchwarden-icon.png" alt="" width="60" height="60">
+          <h2>LaunchWarden<span class="kind">Startup items and processes for macOS</span></h2>
+        </div>
+        <p class="hook">See and control everything that starts with your Mac.</p>
+        <p class="lead">Not just what System Settings chooses to show you: launch agents, daemons, login items embedded in apps, and the background task database, in one list.</p>
+        <ul>
+          <li><b>Real state</b>: running, loaded, disabled or orphaned, read live from launchd</li>
+          <li><b>Real target and signature</b> behind each item</li>
+          <li><b>Removal goes to a quarantine</b>, restorable in one click</li>
+          <li><b>Processes view</b> with the launchd job that started each one</li>
+        </ul>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/blckdvc/LaunchWarden/releases/latest">Download</a>
+          <a class="btn" href="https://github.com/blckdvc/LaunchWarden">Read more</a>
+          <span class="meta" data-repo="LaunchWarden">v0.5.3 · Swift</span>
+        </div>
+      </div>
+      <div class="shot">
+        <a href="assets/launchwarden.png"><img src="assets/launchwarden.png" width="1600" height="923" loading="lazy" alt="LaunchWarden listing processes with their CPU, memory, launchd job and signature"></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool flip" id="audiolook" style="--a:#2b95ff">
+    <div class="wrap">
+      <div class="text">
+        <div class="title">
+          <img src="assets/audiolook-icon.png" alt="" width="60" height="60">
+          <h2>AudioLook<span class="kind">Audio loop player for macOS</span></h2>
+        </div>
+        <p class="hook">Hear a loop at your tempo before it reaches your DAW.</p>
+        <p class="lead">A floating player that follows your Finder selection. Pick a sample, loop a region, match the tempo, transpose it, then drag the result into your session.</p>
+        <ul>
+          <li><b>High-quality time-stretch and transposition</b>, on the Signalsmith Stretch engine</li>
+          <li><b>A/B loop</b> with a click-free crossfade, snapped to the grid if you like</li>
+          <li><b>MIDI files too</b>, shown as a piano-roll</li>
+          <li><b>Drag to a DAW</b>: the region, rendered as you hear it</li>
+        </ul>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/blckdvc/AudioLook/releases/latest">Download</a>
+          <a class="btn" href="https://github.com/blckdvc/AudioLook">Source</a>
+          <span class="meta" data-repo="AudioLook">1.3.0 · Swift</span>
+        </div>
+      </div>
+      <div class="shot">
+        <a href="assets/audiolook.png"><img src="assets/audiolook.png" width="1600" height="1094" loading="lazy" alt="AudioLook with an A/B region over one bar of a drum loop"></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool" id="kdownloader" style="--a:#39c5d8">
+    <div class="wrap">
+      <div class="text">
+        <div class="title">
+          <img src="assets/kdownloader-icon.png" alt="" width="60" height="60">
+          <h2>KDownloader<span class="kind">Download manager for macOS, Windows and Linux</span></h2>
+        </div>
+        <p class="hook">Copy a link. That's it.</p>
+        <p class="lead">KDownloader watches your clipboard. One small app does what usually takes three: a BitTorrent client, a download manager and a debrid front-end.</p>
+        <ul>
+          <li><b>Torrents</b> at Transmission weight, on the librqbit engine</li>
+          <li><b>Direct downloads</b> through debrid services or straight from free hosts</li>
+          <li><b>Hands-free</b>: links checked, grouped into packages, resumed, archives extracted</li>
+          <li><b>About 10 MB</b>, with Tauri rather than a bundled browser</li>
+        </ul>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/blckdvc/KDownloader/releases/latest">Download</a>
+          <a class="btn" href="https://github.com/blckdvc/KDownloader">Source</a>
+          <span class="meta" data-repo="KDownloader">v0.3.4 · Rust</span>
+        </div>
+      </div>
+      <div class="shot">
+        <a href="assets/kdownloader.png"><img src="assets/kdownloader.png" width="1600" height="1114" loading="lazy" alt="KDownloader's torrent list with the details panel"></a>
+      </div>
+    </div>
+  </section>
+
+  <section class="tool flip" id="report-workshop" style="--a:#e0a534">
+    <div class="wrap">
+      <div class="text">
+        <div class="title">
+          <div class="glyph">R</div>
+          <h2>Report Workshop<span class="kind">Remediation reports from Tenable data</span></h2>
+        </div>
+        <p class="hook">From a vulnerability export to a report a client can act on.</p>
+        <p class="lead">A local application that reads a Tenable CSV export, or queries the API, and groups thousands of findings into a short list of concrete remediation actions.</p>
+        <ul>
+          <li><b>PDF and Excel reports</b>, branded per client</li>
+          <li><b>Plugin names become actions</b> through an editable rule set</li>
+          <li><b>End-of-life software</b> listed with the machines that run it</li>
+          <li><b>The data stays on your computer</b></li>
+        </ul>
+        <div class="actions">
+          <a class="btn primary" href="https://github.com/blckdvc/Tenable-Report-Workshop">Get it on GitHub</a>
+          <span class="meta">Python · MIT</span>
+        </div>
+      </div>
+      <div class="shot">
+        <a href="assets/report-workshop.png"><img class="flat" src="assets/report-workshop.png" width="1600" height="1024" loading="lazy" alt="Report Workshop: an export loaded, with a live preview of the report cover"></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div>
+      <h3>Free, and staying that way.</h3>
+      <p>If one of these saves you an afternoon and you feel like it, buy me a few tokens. They go straight back into the next tool.</p>
+      <a class="tokens" href="https://paypal.me/lbenh"><img src="assets/buy-me-tokens.png" alt="Buy me tokens" width="179" height="40"></a>
+    </div>
+    <div>
+      <p><b>First launch.</b> The Mac apps are not notarized by Apple. macOS refuses to open them the first time: right-click the app, choose Open, then confirm.</p>
+      <p><b>Source and issues.</b> Everything lives on <a href="https://github.com/blckdvc">github.com/blckdvc</a>. Bug reports are welcome there.</p>
+      <p class="small">Report Workshop is an independent project; Tenable is a trademark of its owner.<br>© 2026 blckdvc</p>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Affiche la dernière version publiée de chaque outil ; le texte de la page sert de repli.
+  document.querySelectorAll(".meta[data-repo]").forEach(async (el) => {
+    try {
+      const r = await fetch(`https://api.github.com/repos/blckdvc/${el.dataset.repo}/releases/latest`);
+      if (!r.ok) return;
+      const tag = (await r.json()).tag_name;
+      if (tag) el.textContent = el.textContent.replace(/^\S+/, tag);
+    } catch (_) {}
+  });
+</script>
+</body>
+</html>
